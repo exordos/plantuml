@@ -1,0 +1,36 @@
+name: "genesis_plantuml"
+description: "PlantUML server to render schemas"
+schema_version: 1
+version: "{{ version }}"
+api_version: "v1"
+
+requirements:
+  core:
+    from_version: "0.0.0"
+
+resources:
+  $core.compute.sets:
+    genesis_plantuml_set:
+      name: "genesis-plantuml"
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      cores: $genesis_plantuml.imports.$var_default_cores:value
+      ram: $genesis_plantuml.imports.$var_default_ram:value
+      replicas: $genesis_plantuml.imports.$var_default_replicas:value
+      disk_spec:
+        kind: "root_disk"
+        size: 10
+        image: "{{ repository | default('https://github.com/infraguys/genesis_plantuml') }}/genesis_plantuml/{{ version }}/images/genesis-plantuml.raw.gz"
+
+imports:
+  var_default_replicas:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_replicas"
+  var_default_cores:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_cores"
+  var_default_ram:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_ram"
