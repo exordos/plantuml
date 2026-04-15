@@ -22,7 +22,7 @@ build:
     - dst: /opt/genesis_plantuml
       # Local path
       path:
-        src: ..
+        src: ../../genesis_plantuml
 
   # List of elements in the project
   elements:
