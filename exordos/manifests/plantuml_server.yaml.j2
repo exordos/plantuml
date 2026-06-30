@@ -1,0 +1,59 @@
+name: "plantuml_server"
+description: "PlantUML server to render schemas"
+schema_version: 1
+version: "{{ version }}"
+api_version: "v1"
+
+requirements:
+  core:
+    from_version: "0.0.0"
+
+imports:
+  var_default_cores:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_cores"
+  var_default_ram:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_ram"
+
+resources:
+  $core.compute.nodes:
+    plantuml_server:
+      name: "plantuml-server"
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      cores: $plantuml_server.imports.$var_default_cores:value
+      ram: $plantuml_server.imports.$var_default_ram:value
+      disk_spec:
+        kind: "disks"
+        disks:
+          - size: 10
+            image: "{{ repository | default('https://repo.exordos.com/exordos-elements') }}/plantuml_server/{{ version }}/images/plantuml-server.raw.zst"
+            label: root
+
+  $core.em.services:
+    plantuml:
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      name: "plantuml-server"
+      path: "/usr/bin/java -Djava.awt.headless=true -jar /opt/plantuml/plantuml.jar -picoweb:8080:0.0.0.0"
+      user: plantuml
+      group: plantuml
+      target:
+        kind: node
+        node: $core.compute.nodes.$plantuml_server:uuid
+      service_type:
+        kind: simple
+        count: 1
+      target_status: enabled
+      before:
+        - kind: shell
+          command: /usr/bin/test -s /opt/plantuml/plantuml.jar
+
+exports:
+  plantuml_node:
+    link: "$core.compute.nodes.$plantuml_server"
+    kind: "resource"
+  plantuml_service:
+    link: "$core.em.services.$plantuml"
+    kind: "resource"

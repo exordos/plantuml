@@ -1,5 +1,7 @@
 SHELL := bash
-REPOSITORY := https://repository.genesis-core.tech
+REPOSITORY := https://repo.exordos.com/exordos-elements
+EXORDOS_USER ?= admin
+EXORDOS_PASSWORD ?= admin
 ifeq ($(SSH_KEY),)
 	SSH_KEY = ~/.ssh/id_rsa.pub
 endif
@@ -11,7 +13,8 @@ help:
 	@echo "install          - install element"
 
 build:
-	genesis build -i $(SSH_KEY) -f . --inventory --manifest-var repository=$(REPOSITORY)
+	exordos build -i $(SSH_KEY) -f . --manifest-var repository=$(REPOSITORY)
 
 install:
-	genesis elements install output/manifests/genesis_plantuml.yaml
+	version="$$(exordos -s -u $(EXORDOS_USER) -p $(EXORDOS_PASSWORD) get-version .)"; \
+	exordos -u $(EXORDOS_USER) -p $(EXORDOS_PASSWORD) ee install "output/exordos-elements/plantuml_server/$${version}/manifests/plantuml_server.yaml"

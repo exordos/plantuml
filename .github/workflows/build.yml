@@ -1,43 +1,90 @@
 name: build
 
 on:
+  pull_request:
   push:
+    branches:
+      - master
+    tags:
+      - "*"
+  workflow_dispatch:
 
 env:
-  ARTIFACTS_PATH: artifacts
+  ARTIFACTS_PATH: output
+  EXORDOS_CFG: exordos/exordos.yaml
+  RELEASE_ARTIFACTS_PATH: artifacts
 
 jobs:
   Build:
-    runs-on: self-hosted
-    if : ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: [self-hosted, vm]
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 30
-      - name: Build Genesis DB
-        env:
-            PUSH_CFG: ${{ secrets.PUSH_CFG }}
+          fetch-depth: 0
+
+      - name: Check Exordos build prerequisites
         run: |
-          set -eux
+          set -euo pipefail
 
-          mkdir -p ${ARTIFACTS_PATH}
+          exordos version
+          command -v packer
+          command -v qemu-img
+          command -v qemu-system-x86_64
+          command -v mkisofs
 
-          source ~/.profile
-          VERSION="$(genesis get-version .)"
+      - name: Build Exordos element
+        run: |
+          set -euo pipefail
 
-          genesis build $(pwd) --inventory
+          rm -rf "${ARTIFACTS_PATH}" "${RELEASE_ARTIFACTS_PATH}"
+          exordos build . \
+            --exordos-cfg-file "${EXORDOS_CFG}" \
+            --output-dir "${ARTIFACTS_PATH}" \
+            --force
 
-          # Decode and write the push configuration
-          echo "$PUSH_CFG" | base64 -d > genesis/genesis.push.yaml
-          genesis push -c genesis/genesis.push.yaml -t local -f --latest
+      - name: Show build output
+        run: |
+          set -euo pipefail
+          find "${ARTIFACTS_PATH}" -maxdepth 4 -type f -printf "%p %s bytes\n"
 
-          # Temporary upload step is done in the build script
-          echo "${VERSION}" > "${ARTIFACTS_PATH}/version.txt"
-          mv output/images/*.raw.gz "${ARTIFACTS_PATH}/"
+      - name: Publish Exordos element
+        env:
+          PUSH_CFG: ${{ secrets.PUSH_CFG }}
+        run: |
+          set -euo pipefail
+
+          : "${PUSH_CFG:?Set secret PUSH_CFG to base64-encoded exordos.push.yaml content}"
+
+          push_cfg_path="${RUNNER_TEMP}/exordos.push.yaml"
+          printf "%s" "${PUSH_CFG}" | base64 -d > "${push_cfg_path}"
+
+          latest_arg=()
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            latest_arg=(--latest)
+          fi
+
+          exordos push . \
+            --exordos-cfg-file "${push_cfg_path}" \
+            --element-dir "${ARTIFACTS_PATH}" \
+            --force \
+            "${latest_arg[@]}"
+
+      - name: Collect release artifacts
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p "${RELEASE_ARTIFACTS_PATH}"
+          cp "${ARTIFACTS_PATH}/exordos-elements/plantuml_server/"*/images/*.raw.zst "${RELEASE_ARTIFACTS_PATH}/"
+
       - name: Set current date as env variable
         id: date
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
           r=$(date -u +'%Y.%m.%d')
           echo "DATE=$r" >> $GITHUB_OUTPUT
@@ -46,7 +93,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./artifacts/*.gz
+          file: ./artifacts/*.raw.zst
           tag: ${{ github.ref }}
           release_name: ${{ steps.date.outputs.DATE }} (${{ github.ref_name }})
           overwrite: true

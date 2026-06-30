@@ -23,5 +23,5 @@
 hs_err_pid*
 replay_pid*
 
-# Genesis build output (images, rendered manifests, inventory)
+# Exordos build output (images, rendered manifests, inventory)
 output/

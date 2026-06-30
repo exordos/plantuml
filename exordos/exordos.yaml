@@ -14,30 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# Build section. It specifies the build process of the project elements
 build:
-
-  # Dependencies of the project
-  deps:
-    - dst: /opt/genesis_plantuml
-      # Local path
-      path:
-        src: ../../genesis_plantuml
-
-  # List of elements in the project
   elements:
-    - manifest: manifests/genesis_plantuml.yaml.j2
+    - manifest: manifests/plantuml_server.yaml.j2
       images:
-      - name: genesis-plantuml
-        format: gz
-
-        # OS profile for the image
-        profile: genesis_base
-
-        # Provisioning script
-        script: images/install.sh
-
-        # Override image build parameters, for instance Packer parameters
-        override:
-          # For development purposes it's handy to have more space.
-          disk_size: "8G"
+        - name: plantuml-server
+          format: zst
+          profile: exordos_base
+          script: images/install.sh
+          override:
+            disk_size: "8G"

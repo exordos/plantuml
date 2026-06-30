@@ -23,7 +23,6 @@ set -o pipefail
 # Pinned release: bump when upgrading (see https://github.com/plantuml/plantuml/releases).
 PLANTUML_VERSION="1.2026.2"
 
-# Install packages
 sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y ca-certificates graphviz openjdk-21-jre-headless wget
@@ -37,27 +36,3 @@ if ! id -u plantuml >/dev/null 2>&1; then
 fi
 
 sudo chown -R plantuml:plantuml /opt/plantuml
-
-sudo tee /etc/systemd/system/plantuml.service >/dev/null <<'EOF'
-[Unit]
-Description=PlantUML Server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=plantuml
-Group=plantuml
-WorkingDirectory=/opt/plantuml
-ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /opt/plantuml/plantuml.jar -picoweb:8080:0.0.0.0
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-if command -v systemctl >/dev/null 2>&1; then
-  sudo systemctl daemon-reload
-  sudo systemctl enable plantuml.service
-fi
