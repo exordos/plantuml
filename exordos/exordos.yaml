@@ -16,7 +16,7 @@
 
 build:
   elements:
-    - manifest: manifests/plantuml_server.yaml.j2
+    - manifest: manifests/plantuml.yaml.j2
       images:
         - name: plantuml-server
           format: zst
