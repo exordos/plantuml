@@ -17,6 +17,8 @@
 build:
   elements:
     - manifest: manifests/plantuml.yaml.j2
+      artifacts:
+        - path: artifacts/icon.jpg
       images:
         - name: plantuml-server
           format: zst
