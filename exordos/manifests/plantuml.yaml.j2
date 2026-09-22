@@ -29,7 +29,7 @@ resources:
         kind: "disks"
         disks:
           - size: 10
-            image: "{{ repository | default('https://repo.exordos.com/exordos-elements') }}/plantuml_server/{{ version }}/images/plantuml-server.raw.zst"
+            image: "{{ images.plantuml_server }}"
             label: root
 
   $core.em.services:
